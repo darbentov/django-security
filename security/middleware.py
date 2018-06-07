@@ -8,14 +8,14 @@ from re import compile
 import django.conf
 from django.contrib.auth import logout
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse, resolve
+
 from django.http import HttpResponseRedirect, HttpResponse
 from django.test.signals import setting_changed
+
 from django.utils import timezone
 import django.views.static
 
 from ua_parser.user_agent_parser import ParseUserAgent
-
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,11 @@ try:
     from django.utils.deprecation import MiddlewareMixin
 except ImportError:
     MiddlewareMixin = object
+
+if django.get_version() >= '2.0':
+    from django.urls import resolve, reverse
+else:
+    from django.core.urlresolvers import reverse, resolve
 
 
 class CustomLogoutMixin(object):
@@ -91,8 +96,8 @@ class BaseMiddleware(MiddlewareMixin):
 
     def _on_setting_changed(self, sender, setting, value, **kwargs):
         if (
-            setting in self.REQUIRED_SETTINGS or
-            setting in self.OPTIONAL_SETTINGS
+                setting in self.REQUIRED_SETTINGS or
+                setting in self.OPTIONAL_SETTINGS
         ):
             self.load_setting(setting, value)
 
@@ -490,6 +495,7 @@ class XFrameOptionsMiddleware(BaseMiddleware):
 
         return response
 
+
 # preserve older django-security API
 # new API uses "deny" as default to maintain compatibility
 XFrameOptionsDenyMiddleware = XFrameOptionsMiddleware
@@ -648,10 +654,10 @@ class ContentSecurityPolicyMiddleware(MiddlewareMixin):
             if loc in self._CSP_LOCATIONS:
                 csp_loc_string += " '{0}'".format(loc)  # quoted
             elif loc == '*':
-                csp_loc_string += ' *'                   # not quoted
+                csp_loc_string += ' *'  # not quoted
             else:
                 # XXX: check for valid hostname or URL
-                csp_loc_string += " {0}".format(loc)   # not quoted
+                csp_loc_string += " {0}".format(loc)  # not quoted
 
         return csp_loc_string
 
@@ -800,6 +806,7 @@ class StrictTransportSecurityMiddleware(MiddlewareMixin):
      <https://datatracker.ietf.org/doc/rfc6797/>`_
     - `Preloaded HSTS sites <http://www.chromium.org/sts>`_
     """
+
     def __init__(self, get_response=None):
         self.get_response = get_response
 
@@ -941,10 +948,10 @@ class SessionExpiryPolicyMiddleware(CustomLogoutMixin, BaseMiddleware):
             return
 
         if (
-            self.START_TIME_KEY not in request.session or
-            self.LAST_ACTIVITY_KEY not in request.session or
-            timezone.is_naive(request.session[self.START_TIME_KEY]) or
-            timezone.is_naive(request.session[self.LAST_ACTIVITY_KEY])
+                self.START_TIME_KEY not in request.session or
+                self.LAST_ACTIVITY_KEY not in request.session or
+                timezone.is_naive(request.session[self.START_TIME_KEY]) or
+                timezone.is_naive(request.session[self.LAST_ACTIVITY_KEY])
         ):
             response = self.process_new_session(request)
         else:
@@ -1002,6 +1009,7 @@ class SessionExpiryPolicyMiddleware(CustomLogoutMixin, BaseMiddleware):
         diff = now - time
         age = diff.days * self.SECONDS_PER_DAY + diff.seconds
         return age
+
 
 # Modified a little bit by us.
 
